@@ -6,21 +6,36 @@ List<Sensor> sensoren = new List<Sensor>
    new DruckSensor("Leitung-A"),
    new Sensor("Feuchtigkeit-1", "%", 0, 100)
 };
-
-
 for (int i = 0; i < 5; i++)
 {
     Console.WriteLine($"--- Messzyklus {i + 1} ---");
-
     foreach (Sensor s in sensoren)
     {
         s.Messen();
         Console.WriteLine(s);  // statt s.Anzeigen()
     }
-
     Thread.Sleep(500);
     Console.WriteLine();
 }
+
+// LINQ -- wie List Comprehensions, nur mächtiger
+Console.WriteLine("=== LINQ Auswertung ===");
+
+double durchschnitt = sensoren.Average(s => s.Messwert);
+Console.WriteLine($"Durchschnitt: {durchschnitt:F2}");
+
+double maxWert = sensoren.Max(s => s.Messwert);
+Console.WriteLine($"Hoechster Wert: {maxWert:F2}");
+
+double minWert = sensoren.Min(s => s.Messwert);
+Console.WriteLine($"Niedrigster Wert: {minWert:F2}");
+
+// Nur Sensoren im Alarm filtern
+var alarme = sensoren.Where(s => s.IstAlarm()).ToList();
+Console.WriteLine($"Sensoren im Alarm: {alarme.Count}");
+
+Console.WriteLine();
+
 
 Console.WriteLine("=== Alarm-Pruefung ===");
 foreach (Sensor s in sensoren)
@@ -37,9 +52,17 @@ foreach (Sensor s in sensoren)
         Console.WriteLine($"OK: {s.Name} = {s.Messwert} {s.Einheit}");
         Console.ResetColor();
     }
-}
 
-class Sensor // ------------------------------------------------ Sensor Baisklasse ------------------------
+// Interface -- wie ein Vertrag: "Wer mich implementiert, MUSS diese Methoden haben"
+interface ISensor
+{
+    string Name { get; set; }
+    string Einheit { get; set; }
+    double Messwert { get; }
+    void Messen();
+    bool IstAlarm();
+}
+class Sensor : ISensor  // Sensor Baisklasse ------------------------
 {
     public string Name { get; set; }
     public string Einheit { get; set; }
@@ -95,7 +118,7 @@ class TemperaturSensor : Sensor
     public override void Messen()
     {
         base.Messen();  // erstmal normal messen wie der Eltern-Sensor
-        // Dann Temperatur realistischer machen: auf ganze Grad runden
+        // überschrreibe den Messwert der Elternklasse mit der gerundeten Version
         Messwert = Math.Round(Messwert);
     }
 
