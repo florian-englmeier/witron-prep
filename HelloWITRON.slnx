@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="BenchmarkSuite1/BenchmarkSuite1.csproj" />
   <Project Path="HelloWITRON/HelloWITRON.csproj" />
+  <Project Path="SensorAPI/SensorAPI.csproj" Id="39c353bb-8e84-4423-b451-4eda1a6deb6e" />
 </Solution>
