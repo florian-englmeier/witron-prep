@@ -1,5 +1,9 @@
 ﻿
+using System.Net.Http;
+
 // Hauptprogramm -- v3: Vererbung + Alarm
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 List<Sensor> sensoren = new List<Sensor>
 {
    new TemperaturSensor("Ofen-1"),
@@ -13,6 +17,9 @@ for (int i = 0; i < 5; i++)
     {
         s.Messen();
         Console.WriteLine(s);  // statt s.Anzeigen()
+    // Messwert in CSV - Datei loggen
+        string zeile = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss};{s.Name};{s.Messwert};{s.Einheit}";
+        File.AppendAllText("messdaten.csv", zeile + Environment.NewLine);
     }
     Thread.Sleep(500);
     Console.WriteLine();
@@ -52,6 +59,39 @@ foreach (Sensor s in sensoren)
         Console.WriteLine($"OK: {s.Name} = {s.Messwert} {s.Einheit}");
         Console.ResetColor();
     }
+}
+/*
+HttpClient → ein HTTP-Client, wie requests in Python
+await → "Warte auf die Antwort, aber blockiere nicht das ganze Programm"
+GetStringAsync() → holt den Inhalt einer URL als String
+Markredwitz → Nachbarort von Marktredwitz, dein Revier! 😄
+catch (HttpRequestException) → fängt Netzwerkfehler ab
+ */
+
+Console.WriteLine("=== Wetterdaten abrufen ===");
+Console.WriteLine("Test: Komme ich hierhin?");
+
+HttpClient client = new HttpClient();
+client.Timeout = TimeSpan.FromSeconds(5);
+
+try
+{
+    string url = "https://wttr.in/Marktredwitz?format=%t+%h+%w";
+    Console.WriteLine($"Rufe ab: {url}");
+    string antwort = await client.GetStringAsync(url);
+    Console.WriteLine($"Wetter in Marktredwitz: {antwort}");
+}
+catch (Exception ex)
+{
+    Console.ForegroundColor = ConsoleColor.Yellow;
+    Console.WriteLine($"WARNUNG: {ex.GetType().Name}: {ex.Message}");
+    Console.ResetColor();
+}
+
+Console.WriteLine("=== Programm Ende ===");
+Console.ReadLine();
+
+
 
 // Interface -- wie ein Vertrag: "Wer mich implementiert, MUSS diese Methoden haben"
 interface ISensor
