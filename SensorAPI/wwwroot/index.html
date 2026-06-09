@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WITRON Sensor-Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #1a1a2e;
+            color: white;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #00d4ff;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #333;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #16213e;
+            color: #00d4ff;
+        }
+
+        .alarm {
+            color: red;
+            font-weight: bold;
+        }
+
+        .ok {
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+    <h1>WITRON Sensor-Dashboard</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Sensor</th>
+                <th>Messwert</th>
+                <th>Einheit</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="sensordaten">
+        </tbody>
+    </table>
+    <button onclick="laden()">Aktualisieren</button>
+
+    <script>
+        async function laden() {
+            const response = await fetch('/api/sensor');
+            const daten = await response.json();
+
+            const tbody = document.getElementById('sensordaten');
+            tbody.innerHTML = '';
+
+            daten.forEach(s => {
+                const alarm = s.messwert < s.min || s.messwert > s.max;
+                const status = alarm ? 'ALARM' : 'OK';
+                const css = alarm ? 'alarm' : 'ok';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${s.name}</td>
+                        <td>${s.messwert.toFixed(2)}</td>
+                        <td>${s.einheit}</td>
+                        <td class="${css}">${status}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        laden();
+    </script>
+</body>
+</html>

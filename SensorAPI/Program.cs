@@ -18,6 +18,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
+app.UseStaticFiles();  // HTML/CSS/JS aus wwwroot ausliefern
+
 app.MapControllers();
 
 app.Run();
