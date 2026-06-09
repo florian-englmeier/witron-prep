@@ -38,8 +38,26 @@ namespace SensorAPI
             return Ok(alarme);
 
         }
-    }
 
+        [HttpPost("quittieren")]
+        public ActionResult Quittieren([FromBody] QuittierungRequest request)
+        {
+            var sensor = _sensoren.FirstOrDefault(s => s.Name == request.SensorName);
+            if (sensor == null)
+            {
+                return NotFound($"Sensor {request.SensorName} nicht gefunden");
+            }
+
+            sensor.AlarmQuittiert = true;
+            sensor.QuittiertVon = request.Techniker;
+            sensor.QuittiertUm = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+            return Ok($"Alarm fuer {sensor.Name} quittiert von {request.Techniker}");
+        }
+
+
+
+    }
 
 
     public class SensorData
@@ -49,5 +67,18 @@ namespace SensorAPI
         public double Messwert { get; set; }
         public double Min { get; set; }
         public double Max { get; set; }
+        public bool AlarmQuittiert { get; set; } = false;
+        public string QuittiertVon { get; set; } = "";
+        public string QuittiertUm { get; set; } = "";
     }
+
+    public class QuittierungRequest
+    {
+        public string SensorName { get; set; } = "";
+        public string Techniker { get; set; } = "";
+    }
+
 }
+
+
+

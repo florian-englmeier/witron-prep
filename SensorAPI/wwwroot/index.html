@@ -49,6 +49,7 @@
                 <th>Messwert</th>
                 <th>Einheit</th>
                 <th>Status</th>
+                <th>Quittierung</th>
             </tr>
         </thead>
         <tbody id="sensordaten">
@@ -68,19 +69,39 @@
                 const alarm = s.messwert < s.min || s.messwert > s.max;
                 const status = alarm ? 'ALARM' : 'OK';
                 const css = alarm ? 'alarm' : 'ok';
+                const quittiert = s.alarmQuittiert
+                    ? `Quittiert von ${s.quittiertVon} um ${s.quittiertUm}`
+                    : '';
+
+                const button = alarm && !s.alarmQuittiert
+                    ? `<button onclick="quittieren('${s.name}')">Quittieren</button>`
+                    : '';
 
                 tbody.innerHTML += `
                     <tr>
                         <td>${s.name}</td>
                         <td>${s.messwert.toFixed(2)}</td>
                         <td>${s.einheit}</td>
-                        <td class="${css}">${status}</td>
+                        <td class="${css}">${status} ${button}</td>
+                        <td>${quittiert}</td>
                     </tr>
                 `;
             });
         }
 
-        // Einmal laden, dann alle 2 Sekunden
+        async function quittieren(sensorName) {
+            const techniker = prompt('Dein Name:');
+            if (!techniker) return;
+
+            await fetch('/api/sensor/quittieren', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sensorName: sensorName, techniker: techniker })
+            });
+
+            laden();
+        }
+
         laden();
         setInterval(laden, 2000);
     </script>
