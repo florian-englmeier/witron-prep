@@ -29,7 +29,17 @@ namespace SensorAPI
             }
             return Ok(_sensoren);
         }
+
+        [HttpGet("alarm")]
+        public ActionResult<List<SensorData>> GetAlarm()
+        {
+            // Sensoren mit Messwerten außerhalb des zulässigen Bereichs zurückgeben
+            var alarme = _sensoren.Where(s => s.Messwert < s.Min || s.Messwert > s.Max).ToList();
+            return Ok(alarme);
+
+        }
     }
+
 
 
     public class SensorData
