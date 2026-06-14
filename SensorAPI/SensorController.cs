@@ -8,13 +8,18 @@ namespace SensorAPI
     [Route("api/[controller]")]
     public class SensorController : Controller
     {
-        private static List<SensorData> _sensoren = new List<SensorData>
+        
+        private static List < SensorData > _sensoren = new List<SensorData>
         {
-            new SensorData { Name = "Ofen-1", Einheit = "°C", Min = -20, Max = 120 },
-            new SensorData { Name = "Leitung-A", Einheit = "bar", Min = 120, Max = 10 },
-            new SensorData { Name = "Feuchtigkeit", Einheit = "%", Min = 0, Max = 100 }
-
+            new SensorData { Name = "Antrieb-1 Drehzahl",   Einheit = "RPM",  Min = 0,  Max = 1500, Gruppe = "Antriebe" },
+            new SensorData { Name = "Antrieb-1 Schwingung", Einheit = "mm/s", Min = 0,  Max = 4.5,  Gruppe = "Antriebe" },
+            new SensorData { Name = "Antrieb-2 Drehmoment", Einheit = "Nm",   Min = 0,  Max = 120,  Gruppe = "Antriebe" },
+            new SensorData { Name = "Spannung Zone-A",      Einheit = "V",    Min = 22, Max = 26,   Gruppe = "Elektrik" },
+            new SensorData { Name = "Lastbewegung Zone-A",  Einheit = "kg",   Min = 0,  Max = 500,  Gruppe = "Foerderband" },
+            new SensorData { Name = "Lastbewegung Zone-B",  Einheit = "kg",   Min = 0,  Max = 500,  Gruppe = "Foerderband" },
+            new SensorData { Name = "Betriebsstunden",      Einheit = "h",    Min = 0,  Max = 8760, Gruppe = "Wartung" },
         };
+
 
         private static Random _random = new Random();
 
@@ -22,14 +27,16 @@ namespace SensorAPI
         [HttpGet]
         public ActionResult<List<SensorData>> GetSensoren()
         {
-            // Aktuelle Messwerte simulieren
             foreach (var s in _sensoren)
             {
-                s.Messwert = Math.Round(_random.NextDouble() * (s.Max - s.Min) + s.Min, 2);
+                // Aktuelle Messwerte simulieren
+                // Neu — manchmal 10 % über die Grenzen:
+                double spielraum = (s.Max - s.Min) * 0.1;
+                s.Messwert = Math.Round(_random.NextDouble() * (s.Max - s.Min + 2 * spielraum) + s.Min - spielraum, 2);
+
             }
             return Ok(_sensoren);
         }
-
         [HttpGet("alarm")]
         public ActionResult<List<SensorData>> GetAlarm()
         {
@@ -54,11 +61,7 @@ namespace SensorAPI
 
             return Ok($"Alarm fuer {sensor.Name} quittiert von {request.Techniker}");
         }
-
-
-
     }
-
 
     public class SensorData
     {
@@ -67,6 +70,7 @@ namespace SensorAPI
         public double Messwert { get; set; }
         public double Min { get; set; }
         public double Max { get; set; }
+        public string Gruppe { get; set; } = "";  // NEU!
         public bool AlarmQuittiert { get; set; } = false;
         public string QuittiertVon { get; set; } = "";
         public string QuittiertUm { get; set; } = "";

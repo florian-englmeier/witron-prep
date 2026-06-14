@@ -1,52 +1,177 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WITRON Sensor-Dashboard</title>
+    <title>WITRON Anlagen-Monitor</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial;
-            background: #1a1a2e;
-            color: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0a0e17;
+            color: #e0e0e0;
             padding: 20px;
         }
 
-        h1 {
-            color: #00d4ff;
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #131a2e;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #00d4ff;
         }
+
+            .header h1 {
+                color: #00d4ff;
+                font-size: 24px;
+            }
+
+            .header .zeit {
+                color: #888;
+                font-size: 14px;
+            }
+
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-box {
+            flex: 1;
+            padding: 15px;
+            border-radius: 10px;
+            background: #131a2e;
+            text-align: center;
+        }
+
+            .status-box .zahl {
+                font-size: 32px;
+                font-weight: bold;
+            }
+
+            .status-box .label {
+                font-size: 12px;
+                color: #888;
+                margin-top: 5px;
+            }
 
         table {
-            border-collapse: collapse;
             width: 100%;
-        }
-
-        th, td {
-            border: 1px solid #333;
-            padding: 10px;
-            text-align: left;
+            border-collapse: collapse;
+            background: #131a2e;
+            border-radius: 10px;
+            overflow: hidden;
         }
 
         th {
-            background: #16213e;
+            background: #1a2340;
             color: #00d4ff;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #1a2340;
+        }
+
+        tr:hover {
+            background: #1a2340;
         }
 
         .alarm {
-            color: red;
+            color: #ff4444;
             font-weight: bold;
         }
 
         .ok {
             color: #00ff88;
         }
+
+        .balken-bg {
+            background: #1a2340;
+            border-radius: 5px;
+            height: 20px;
+            width: 100%;
+            position: relative;
+        }
+
+        .balken-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+
+        .balken-ok {
+            background: linear-gradient(90deg, #00ff88, #00d4ff);
+        }
+
+        .balken-alarm {
+            background: linear-gradient(90deg, #ff4444, #ff8800);
+        }
+
+        button {
+            background: #00d4ff;
+            color: #0a0e17;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+            button:hover {
+                background: #00b8e6;
+            }
+
+        .quittiert {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #444;
+            margin-top: 20px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
-    <h1>WITRON Sensor-Dashboard</h1>
+    <div class="header">
+        <h1>WITRON Anlagen-Monitor</h1>
+        <div class="zeit" id="uhrzeit"></div>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-box">
+            <div class="zahl" id="anzahlSensoren">0</div>
+            <div class="label">Sensoren aktiv</div>
+        </div>
+        <div class="status-box">
+            <div class="zahl ok" id="anzahlOk">0</div>
+            <div class="label">Status OK</div>
+        </div>
+        <div class="status-box">
+            <div class="zahl alarm" id="anzahlAlarm">0</div>
+            <div class="label">Alarme</div>
+        </div>
+    </div>
+
     <table>
         <thead>
             <tr>
                 <th>Sensor</th>
                 <th>Messwert</th>
+                <th>Bereich</th>
                 <th>Einheit</th>
                 <th>Status</th>
                 <th>Quittierung</th>
@@ -55,38 +180,70 @@
         <tbody id="sensordaten">
         </tbody>
     </table>
-    <button onclick="laden()">Aktualisieren</button>
+
+    <div class="footer">
+        WITRON Sensor-Dashboard v0.9 | Florian Englmeier | 2026
+    </div>
 
     <script>
+        function updateUhrzeit() {
+            const jetzt = new Date();
+            document.getElementById('uhrzeit').textContent =
+                jetzt.toLocaleDateString('de-DE') + ' ' +
+                jetzt.toLocaleTimeString('de-DE');
+        }
+
         async function laden() {
+            updateUhrzeit();
+
             const response = await fetch('/api/sensor');
             const daten = await response.json();
 
             const tbody = document.getElementById('sensordaten');
             tbody.innerHTML = '';
 
+            let alarme = 0;
+            let oks = 0;
+
             daten.forEach(s => {
-                const alarm = s.messwert < s.min || s.messwert > s.max;
-                const status = alarm ? 'ALARM' : 'OK';
-                const css = alarm ? 'alarm' : 'ok';
+                const istAlarm = s.messwert < s.min || s.messwert > s.max;
+                if (istAlarm) alarme++; else oks++;
+
+                const status = istAlarm ? 'ALARM' : 'OK';
+                const css = istAlarm ? 'alarm' : 'ok';
+
+                // Balkenbreite berechnen (0-100%)
+                const range = s.max - s.min;
+                const prozent = Math.min(Math.max(((s.messwert - s.min) / range) * 100, 0), 100);
+                const balkenCss = istAlarm ? 'balken-alarm' : 'balken-ok';
+
                 const quittiert = s.alarmQuittiert
-                    ? `Quittiert von ${s.quittiertVon} um ${s.quittiertUm}`
+                    ? `<span class="quittiert">${s.quittiertVon} | ${s.quittiertUm}</span>`
                     : '';
 
-                const button = alarm && !s.alarmQuittiert
+                const button = istAlarm && !s.alarmQuittiert
                     ? `<button onclick="quittieren('${s.name}')">Quittieren</button>`
                     : '';
 
                 tbody.innerHTML += `
-                    <tr>
-                        <td>${s.name}</td>
-                        <td>${s.messwert.toFixed(2)}</td>
-                        <td>${s.einheit}</td>
-                        <td class="${css}">${status} ${button}</td>
-                        <td>${quittiert}</td>
-                    </tr>
-                `;
+                        <tr>
+                            <td><strong>${s.name}</strong></td>
+                            <td>${s.messwert.toFixed(2)}</td>
+                            <td>
+                                <div class="balken-bg">
+                                    <div class="balken-fill ${balkenCss}" style="width: ${prozent}%"></div>
+                                </div>
+                            </td>
+                            <td>${s.einheit}</td>
+                            <td class="${css}">${status} ${button}</td>
+                            <td>${quittiert}</td>
+                        </tr>
+                    `;
             });
+
+            document.getElementById('anzahlSensoren').textContent = daten.length;
+            document.getElementById('anzahlOk').textContent = oks;
+            document.getElementById('anzahlAlarm').textContent = alarme;
         }
 
         async function quittieren(sensorName) {
