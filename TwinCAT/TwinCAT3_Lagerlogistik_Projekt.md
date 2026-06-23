@@ -37,9 +37,9 @@ Die reale Mechanik kann zunächst vollständig durch SPS-Variablen simuliert wer
 
 ---
 
-## 3. Vorhandene beziehungsweise geplante Komponenten
+## 3. Vorhandene und installierte Komponenten
 
-### 3.1 Steuerungs- und Bedienhardware
+### 3.1 Installierte Steuerungs- und Bedienhardware
 
 - Beckhoff CP6606 Panel-PC beziehungsweise Bedienpanel
 - TwinCAT 3 Engineering
