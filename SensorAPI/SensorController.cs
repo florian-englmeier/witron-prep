@@ -8,7 +8,13 @@ namespace SensorAPI
     [Route("api/[controller]")]
     public class SensorController : Controller
     {
-        
+        private readonly AdsService _ads;
+
+        public SensorController(AdsService ads)
+        {
+            _ads = ads;
+        }
+
         private static List < SensorData > _sensoren = new List<SensorData>
         {
             new SensorData { Name = "Antrieb-1 Drehzahl",   Einheit = "RPM",  Min = 0,  Max = 1500, Gruppe = "Antriebe" },
@@ -36,6 +42,57 @@ namespace SensorAPI
 
             }
             return Ok(_sensoren);
+        }
+        
+        // GET api/sensor/ads-status
+        [HttpGet("ads-status")]
+        public ActionResult GetAdsStatus()
+        {
+            return Ok(new
+            {
+                Connected = _ads.IsConnected,
+                State = _ads.GetPlcState()
+            });
+        }
+
+        // GET api/sensor/live - Live-Werte aus der PalettenStation-SPS
+        [HttpGet("live")]
+        public ActionResult GetLive()
+        {
+            var schritt = _ads.ReadInt("GVL_IO.Schritt");
+            var folienTemp = _ads.ReadReal("GVL_IO.AI_FolienTemperatur");
+            var motorTemp = _ads.ReadReal("GVL_IO.AI_MotorTemperatur");
+            var alarm = _ads.ReadBool("GVL_IO.AlarmAktiv");
+
+            return Ok(new
+            {
+                Connected = _ads.IsConnected,
+                Schritt = schritt,
+                SchrittText = SchrittZuText(schritt),
+                FolienTemperatur = Math.Round(folienTemp, 1),
+                MotorTemperatur = Math.Round(motorTemp, 1),
+                AlarmAktiv = alarm,
+                Zeitstempel = DateTime.Now.ToString("HH:mm:ss")
+            });
+        }
+
+        // Hilfsmethode: übersetzt die Schrittnummer in verständlichen Text
+        private string SchrittZuText(short schritt)
+        {
+            return schritt switch
+            {
+                0 => "S0 - Bereit, wartet auf Palette",
+                1 => "S1 - Foerderband transportiert",
+                2 => "S2 - Palette stoppen",
+                3 => "S3 - Hubwerk faehrt hoch",
+                4 => "S4 - Temperatur pruefen",
+                5 => "S5 - Bearbeitung laeuft",
+                6 => "S6 - Hubwerk faehrt runter",
+                7 => "S7 - Palette verlaesst Station",
+                8 => "S8 - ALARM gesetzt",
+                9 => "S9 - Warten auf Quittierung",
+                _ => $"Unbekannter Schritt: {schritt}"
+            };
         }
         [HttpGet("alarm")]
         public ActionResult<List<SensorData>> GetAlarm()

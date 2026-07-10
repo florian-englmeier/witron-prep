@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Beckhoff.TwinCAT.Ads" Version="7.0.292" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
   </ItemGroup>
 
