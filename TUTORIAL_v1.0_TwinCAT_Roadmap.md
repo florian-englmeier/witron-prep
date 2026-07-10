@@ -1,5 +1,8 @@
 # TwinCAT-3-Lagerlogistikprojekt
 
+> **Stand:** Juli 2026, nach Release v1.2.0
+> **Verwandte Dokumente:** `TUTORIAL_v1.2_ADS_Integration.md` — konkrete Umsetzung der ADS-Schnittstelle
+
 ## 1. Projektziel
 
 Ziel ist der Aufbau einer realitätsnahen Lagerlogistik-Simulation mit TwinCAT 3 und vorhandener Beckhoff-Hardware.
@@ -43,12 +46,12 @@ Die reale Mechanik kann zunächst vollständig durch SPS-Variablen simuliert wer
 
 - Beckhoff CP6606 Panel-PC beziehungsweise Bedienpanel
 - TwinCAT 3 Engineering
-- EtherCAT-Koppler
+- EtherCAT-Koppler EK1100
 - EtherCAT-Endklemme
 - DIN-Tragschiene TS35
 - 24-V-DC-Netzteil
-- Entwicklungsrechner mit Visual Studio
-- C#-Benutzeroberfläche
+- Entwicklungsrechner (nativer Windows-PC) mit Visual Studio 2022
+- C#-Benutzeroberfläche (SensorAPI)
 
 ### 3.2 Digitale Eingangsklemmen
 
@@ -105,13 +108,23 @@ Bei der Inbetriebnahme müssen Signalart und Messbereich geprüft werden, zum Be
 - 4 bis 20 mA
 - Widerstandssensor oder Thermoelement
 
+### 3.5 Elektrische Messtechnik (EL3681)
+
+Die **Beckhoff EL3681** (Digitalmultimeter-Klemme) hängt bereits physisch am EtherCAT-Bus und wartet auf ihre Integration in v1.3.0.
+
+- Spannungsmessung DC/AC bis 300 V
+- Strommessung DC/AC bis 10 A
+- Widerstandsmessung
+- Autoranging und Effektivwerte
+- Anbindung wie normale EtherCAT-Klemme
+
 ---
 
 ## 4. EL3681 als sinnvoller Projektbaustein
 
 Die **Beckhoff EL3681** soll im Projekt als möglicher Baustein für die elektrische Zustandsüberwachung berücksichtigt werden.
 
-> Frühere Bezeichnung im Gespräch: EL6381.  
+> Frühere Bezeichnung im Gespräch: EL6381.
 > Gemeint ist sehr wahrscheinlich die EL3681.
 
 ### Mögliche Aufgaben im Projekt
@@ -186,7 +199,7 @@ Für erste Softwaretests können Eingangsvariablen auch intern simuliert werden.
 
 ---
 
-## 6. TwinCAT-Projektstruktur
+## 6. TwinCAT-Projektstruktur (Ziel-Struktur)
 
 Empfohlene Struktur:
 
@@ -216,6 +229,8 @@ PLC
 └── VISUs
     └── optionale TwinCAT-Visualisierung
 ```
+
+**Aktuelle Umsetzung (v1.2.0):** Es existieren `GVL_IO`, `GVL_Simulation` und `MAIN` mit einer CASE-Schrittkette (siehe Kapitel 13).
 
 ---
 
@@ -305,6 +320,8 @@ Vorteile:
 - Die C#-Oberfläche kann gezielt Sensorsignale simulieren.
 - Später kann auf reale Hardware umgeschaltet werden.
 
+**Aktueller Status (v1.2.0):** Umgesetzt über `GVL_IO.SIM_Aktiv` mit dedizierter `GVL_Simulation`.
+
 ---
 
 ## 9. Erster einfacher Prozessablauf
@@ -354,6 +371,8 @@ ELSE
 
 END_CASE
 ```
+
+**Aktueller Status (v1.2.0):** Ist als Schrittkette S0–S9 in `MAIN` umgesetzt, inklusive Fehlerzweig S8/S9 mit Quittierung. Siehe Grafcet in Kapitel 13.
 
 ---
 
@@ -409,6 +428,8 @@ Mögliche Kommunikation:
 - Protokollierung von Ereignissen
 - Spätere Speicherung in einer Datenbank
 
+**Aktueller Status (v1.2.0):** Umgesetzt als `AdsService.cs` in der SensorAPI mit `ReadBool`, `ReadReal`, `ReadInt`. Endpoint `/api/sensor/live` liest 4 SPS-Variablen live. Details in `TUTORIAL_v1.2_ADS_Integration.md`.
+
 ### Mögliche HMI-Elemente
 
 - Start
@@ -456,37 +477,54 @@ Beim Testen ist zu beachten:
 
 ---
 
-## 13. Aktueller Arbeitsstand
+## 13. Aktueller Arbeitsstand (Stand v1.2.0, Juli 2026)
 
-- TwinCAT-Projekt ist angelegt.
-- Globale Variablen und Datentypen wurden begonnen.
-- `MAIN` ist vorhanden.
-- Erste Hardwareverknüpfungen wurden getestet.
-- SPS-Abfrage und Buskommunikation laufen.
-- Digitale Eingänge können grundsätzlich eingelesen werden.
-- Das Setzen von Online-Werten wurde getestet.
-- Die Unterscheidung zwischen physischem Eingang und Simulationswert muss sauber umgesetzt werden.
-- Die C#- beziehungsweise Visual-Studio-Schnittstelle soll weiterverwendet werden.
-- Die EL3681 wird als möglicher Baustein für Spannungs-, Strom- und Zustandsüberwachung vorgemerkt.
+### Was läuft ✅
+
+**Hardware:**
+- Beckhoff CP6606 mit TwinCAT 3 Runtime (Windows CE) — grünes Icon, Bootprojekt aktiv
+- EK1100 EtherCAT-Koppler mit DI/DO/AI/AO-Klemmen, LEDs grün
+- EL3681 Digitalmultimeter-Klemme physisch am Bus, wartet auf Integration
+- Native Windows-PC mit TwinCAT XAE (Parallels-VM-Ansatz verworfen wegen Realtime-Treiber-Konflikt)
+- ADS-Route zwischen PC und CP6606 stabil (AMS Net ID `5.35.203.54.1.1`, Port 851)
+
+**TwinCAT-Projekt "PalettenStation":**
+- `PalettenstationPLC` läuft im Bootprojekt-Autostart
+- `GVL_IO` mit allen digitalen Eingängen (bNotHaltFrei, bSchutzhaubeZu, bPaletteEingang, ...) und analogen Werten (AI_FolienTemperatur, AI_MotorTemperatur)
+- `GVL_Simulation` mit SIM_*-Variablen für alle Sensoren
+- Umschaltung Hardware/Simulation über `GVL_IO.SIM_Aktiv`
+- `MAIN` mit CASE-Schrittkette S0–S9:
+
+```text
+S0 Bereit  →  S1 Transport  →  S2 Stopp  →  S3 Hub hoch  →  S4 Temp OK?
+                                                                  ↓
+              S7 Abtransport  ←  S6 Hub runter  ←  S5 Prozess 5s
+                     ↓
+                 (zurück zu S0)
+
+Fehlerzweig:      S8 Alarm  →  S9 Warten auf Quittierung  →  S0
+```
+
+**C#-Seite (SensorAPI):**
+- `AdsService.cs` als Singleton in ASP.NET Core registriert
+- Beckhoff.TwinCAT.Ads NuGet 7.0.292
+- Methoden `ReadBool`, `ReadReal`, `ReadInt` mit Guard Clauses und Exception Handling
+- Endpoint `GET /api/sensor/ads-status` (Verbindungsstatus)
+- Endpoint `GET /api/sensor/live` (4 SPS-Variablen live als JSON: Schritt, FolienTemp, MotorTemp, AlarmAktiv)
+
+### Was noch offen ist ⬜
+
+- EL3681 in TwinCAT-Konfiguration einbinden
+- Elektrische Messwerte in GVL_IO ergänzen (AI_Motorspannung, AI_Motorstrom)
+- Schrittkette um Diagnose-Regeln für elektrische Werte erweitern
+- Live-Werte im bestehenden HTML-Dashboard anzeigen (bisher nur JSON im Browser)
+- Write-Endpoint für Alarm-Quittierung aus dem Dashboard
+- CSV-Trendlog für Messwerte
+- Bulk-Read und ADS-Notifications für bessere Performance
 
 ---
 
-## 14. Empfohlene nächste Schritte
-
-1. Hardwareliste mit exakten Klemmenbezeichnungen vervollständigen.
-2. Alle Kanäle eindeutig dokumentieren.
-3. `GVL_IO` in Hardware- und Simulationssignale aufteilen.
-4. Umschaltung `bSimulationAktiv` einbauen.
-5. Erste Schrittkette in `MAIN` oder `FB_Lagerprozess` implementieren.
-6. Alarmmanager für Temperatur und elektrische Messwerte erstellen.
-7. ADS-Verbindung zur C#-Oberfläche testen.
-8. Statuswerte in der Oberfläche anzeigen.
-9. Sensorsignale über die Oberfläche simulieren.
-10. Später reale Sensoren, Aktoren und die EL3681 integrieren.
-
----
-
-## 15. Langfristige Erweiterungen
+## 14. Langfristige Erweiterungen
 
 - Zustandsautomat mit ENUM statt numerischer Schrittwerte
 - Funktionsbausteine für Förderer, Hubwerk und Sensoren
@@ -500,16 +538,17 @@ Beim Testen ist zu beachten:
 - Benutzer- und Rollenverwaltung
 - Digitaler Zwilling der Anlage
 - Automatisierte Tests der SPS-Logik
-- Git-Repository für SPS- und C#-Projekt
 - Dokumentation der Ein- und Ausgangsbelegung
 
 ---
 
-## 16. Strategische Roadmap
+## 15. Strategische Roadmap (Grundprinzip)
 
 Die weitere Entwicklung sollte bewusst in klar getrennten Stufen erfolgen. Dadurch lassen sich Fehler leichter zuordnen und das Projekt bleibt übersichtlich.
 
-### Phase 1: Hardware und Simulation sauber trennen
+### Phase 1: Hardware und Simulation sauber trennen ✅
+
+**Status: erledigt in v1.0.**
 
 Für jedes relevante Eingangssignal werden drei Ebenen vorgesehen:
 
@@ -519,52 +558,15 @@ bPaletteEingangSimulation
 bPaletteEingang
 ```
 
-Die SPS entscheidet abhängig vom Betriebsmodus, welches Signal verwendet wird:
+Die SPS entscheidet abhängig vom Betriebsmodus, welches Signal verwendet wird.
 
-```iecst
-IF bSimulationAktiv THEN
-    bPaletteEingang := bPaletteEingangSimulation;
-ELSE
-    bPaletteEingang := bPaletteEingangHardware;
-END_IF
-```
+### Phase 2: Einen kleinen vollständigen Prozess umsetzen ✅
 
-Diese Trennung ist der wichtigste nächste Schritt.
+**Status: erledigt in v1.0 als S0–S9-Kette.**
 
-Vorteile:
+### Phase 3: Zustandsmaschine einführen ⬜
 
-- Der Prozess kann ohne reale Sensoren getestet werden.
-- Physische Eingänge werden nicht manuell überschrieben.
-- Die C#-Oberfläche kann gezielt Simulationswerte setzen.
-- Hardwarefehler und Softwarefehler lassen sich besser unterscheiden.
-
-### Phase 2: Einen kleinen vollständigen Prozess umsetzen
-
-Zunächst wird nur ein kompakter, vollständig funktionierender Ablauf aufgebaut:
-
-```text
-Palette erkannt
-→ Förderer startet
-→ Palette erreicht Station
-→ Förderer stoppt
-→ Hub fährt hoch
-→ Prozess abgeschlossen
-```
-
-Dieser Ablauf soll zuerst vollständig funktionieren:
-
-- in der SPS
-- im Online-Modus
-- im Simulationsbetrieb
-- später mit einem realen Eingang
-
-Ein kleiner stabiler Ablauf ist strategisch wertvoller als viele gleichzeitig begonnene Funktionen.
-
-### Phase 3: Zustandsmaschine einführen
-
-Der Prozess sollte nicht dauerhaft nur über viele einzelne BOOL-Verknüpfungen gesteuert werden.
-
-Empfohlen wird ein eigener Datentyp:
+Der Prozess sollte nicht dauerhaft nur über viele einzelne BOOL-Verknüpfungen gesteuert werden. Empfohlen wird ein eigener Datentyp:
 
 ```iecst
 TYPE E_ProcessState :
@@ -578,154 +580,42 @@ TYPE E_ProcessState :
 END_TYPE
 ```
 
-Beispiel für die Verwendung:
+**Status: geplant. Aktuell wird noch mit numerischem `Schritt : INT` gearbeitet. Refactoring auf ENUM in einer späteren Version.**
 
-```iecst
-CASE eProcessState OF
+### Phase 4: C#-Schnittstelle anbinden ✅
 
-    E_ProcessState.Idle:
-        bFoerdererEin := FALSE;
-        bHubAuf := FALSE;
+**Status: erledigt in v1.2.0 als AdsService mit Live-Endpoint.**
 
-        IF bNotHaltFrei AND bPaletteEingang THEN
-            eProcessState := E_ProcessState.Transport;
-        END_IF
+### Phase 5: Reale Hardware schrittweise integrieren ⬜
 
-    E_ProcessState.Transport:
-        bFoerdererEin := TRUE;
+**Status: teilweise begonnen — Hardwareverknüpfungen sind gemappt, echte Sensoren an den DIs noch nicht angeschlossen.**
 
-        IF bPaletteStation1 THEN
-            bFoerdererEin := FALSE;
-            eProcessState := E_ProcessState.Lifting;
-        END_IF
+### Phase 6: Alarm- und Diagnosefunktionen ergänzen ⬜
 
-    E_ProcessState.Lifting:
-        bHubAuf := TRUE;
+**Status: teilweise — S8/S9 Alarmzweig existiert, aber noch keine Zeitüberwachungen, keine Plausibilitätsprüfungen.**
 
-        IF bHubOben THEN
-            bHubAuf := FALSE;
-            eProcessState := E_ProcessState.Complete;
-        END_IF
+### Phase 7: EL3681 integrieren ⬜
 
-    E_ProcessState.Complete:
-        IF NOT bPaletteEingang THEN
-            eProcessState := E_ProcessState.Idle;
-        END_IF
-
-    E_ProcessState.Fault:
-        bFoerdererEin := FALSE;
-        bHubAuf := FALSE;
-        bHubAb := FALSE;
-
-END_CASE
-```
-
-Damit wird der Ablauf klarer, leichter erweiterbar und besser in der HMI darstellbar.
-
-### Phase 4: C#-Schnittstelle anbinden
-
-Die Visual-Studio-Anwendung sollte erst dann erweitert werden, wenn der SPS-Prozess allein stabil läuft.
-
-Für die erste Ausbaustufe reichen:
-
-- Simulationsmodus ein und aus
-- Palette simulieren
-- Start
-- Stopp
-- Reset
-- Prozesszustand anzeigen
-- Alarmtext anzeigen
-- Quittierung auslösen
-
-Zunächst nicht erforderlich:
-
-- aufwendige Diagramme
-- Datenbankanbindung
-- Benutzerverwaltung
-- komplexe Statistik
-- umfangreiche Animationen
-
-### Phase 5: Reale Hardware schrittweise integrieren
-
-Die reale Hardware wird kanalweise eingebunden.
-
-Empfohlene Reihenfolge:
-
-1. Einen digitalen Eingang auswählen.
-2. Kanal im EtherCAT-Baum prüfen.
-3. SPS-Variable verknüpfen.
-4. Eingang elektrisch testen.
-5. Wert im Online-Modus beobachten.
-6. Hardware- und Simulationsbetrieb vergleichen.
-7. Erst danach den nächsten Kanal integrieren.
-
-Bei Ausgängen sollten zunächst geeignete Testlasten oder Signallampen verwendet werden.
-
-Motoren, Ventile und größere induktive Lasten benötigen eine passende Leistungs- und Schutzbeschaltung.
-
-### Phase 6: Alarm- und Diagnosefunktionen ergänzen
-
-Wenn der Grundprozess läuft, werden Überwachungen ergänzt:
-
-- Zeitüberschreitung beim Transport
-- Endschalter nicht erreicht
-- unplausible Sensorkombination
-- Temperaturgrenzwert überschritten
-- Unterspannung
-- Überspannung
-- Ausgang aktiv, aber keine erwartete Reaktion
-
-Ein Alarm darf erst vollständig zurückgesetzt werden, wenn:
-
-1. die Ursache nicht mehr ansteht und
-2. der Bediener quittiert hat.
-
-### Phase 7: EL3681 integrieren
-
-Die EL3681 wird erst eingesetzt, wenn der Grundprozess und die Hardwareanbindung stabil sind.
-
-Mögliche Diagnose:
-
-```text
-Fördermotor AUS
-→ Strom ungefähr 0 A
-```
-
-```text
-Fördermotor EIN
-→ Strom innerhalb des erwarteten Bereichs
-```
-
-```text
-Fördermotor EIN, aber Strom zu niedrig
-→ möglicher Leitungsbruch oder Verbraucher nicht angeschlossen
-```
-
-```text
-Fördermotor EIN und Strom zu hoch
-→ mögliche Blockade oder Überlast
-```
-
-Damit wird das Projekt um echte messtechnische Zustandsüberwachung erweitert.
+**Status: EL3681 hängt physisch am Bus, Integration ist Ziel von v1.3.0.** Details in Kapitel 18.
 
 ---
 
-## 17. Priorisierte nächste Arbeitsschritte
+## 16. Ursprüngliche nächste Arbeitsschritte (v1.0-Planung)
 
-Die konkret empfohlene Reihenfolge lautet:
+Die konkret empfohlene Reihenfolge lautete:
 
-1. `GVL_IO` in Hardware- und Simulationssignale aufteilen.
-2. `bSimulationAktiv` einführen.
-3. `E_ProcessState` als ENUM anlegen.
-4. `FB_Lagerprozess` erstellen.
-5. Ablauf `Idle → Transport → Lifting → Complete` umsetzen.
-6. Prozess vollständig im Online-Modus testen.
-7. C#-Oberfläche über ADS anbinden.
-8. Einen realen digitalen Eingang integrieren.
-9. Weitere Eingänge und Ausgänge ergänzen.
-10. Alarmmanager aufbauen.
-11. EL3681 für Spannungs-, Strom- und Zustandsüberwachung integrieren.
-12. Datenaufzeichnung und spätere Analyse ergänzen.
+1. ✅ `GVL_IO` in Hardware- und Simulationssignale aufteilen.
+2. ✅ `bSimulationAktiv` einführen.
+3. ⬜ `E_ProcessState` als ENUM anlegen. *(numerisch umgesetzt, ENUM-Refactoring später)*
+4. ⬜ `FB_Lagerprozess` erstellen. *(aktuell noch alles in MAIN)*
+5. ✅ Ablauf `Idle → Transport → Lifting → Complete` umsetzen (als S0–S9).
+6. ✅ Prozess vollständig im Online-Modus getestet.
+7. ✅ **C#-Oberfläche über ADS anbinden.** *(erledigt v1.2.0)*
+8. ⬜ Einen realen digitalen Eingang integrieren.
+9. ⬜ Weitere Eingänge und Ausgänge ergänzen.
+10. ⬜ Alarmmanager als eigener FB aufbauen.
+11. ⬜ **EL3681 für Spannungs-, Strom- und Zustandsüberwachung integrieren.** *(nächster Schwerpunkt in v1.3.0)*
+12. ⬜ Datenaufzeichnung und spätere Analyse ergänzen.
 
 ### Strategische Leitlinie
 
@@ -734,12 +624,132 @@ Die Reihenfolge lautet bewusst:
 ```text
 Simulation
 → stabiler SPS-Prozess
-→ C#-Schnittstelle
+→ C#-Schnittstelle       ← wir sind hier (v1.2.0)
 → reale Hardware
-→ Diagnose
+→ Diagnose               ← Ziel v1.3.0 (EL3681)
 → EL3681
-→ Datenanalyse
+→ Datenanalyse           ← Ziel v1.4.0 (Predictive Maintenance)
 ```
 
 Dadurch bleibt jede Projektphase einzeln testbar und nachvollziehbar.
 
+---
+
+## 17. Version-History
+
+| Version | Datum | Meilenstein |
+|---------|-------|-------------|
+| v1.0 | Juli 2026 | Roadmap + TwinCAT Setup + Schrittkette S0-S9 + Simulationsumschaltung |
+| v1.1 | Juli 2026 | AdsService-Anfang, PaletteStatus, ADS-Router-Troubleshooting |
+| **v1.2** | **Juli 2026** | **ADS-Integration mit Live-PLC-Daten (AdsService, /api/sensor/live)** |
+| v1.3 | *geplant* | EL3681 Integration (Spannungs-/Strommessung) |
+| v1.4 | *geplant* | Predictive Maintenance Feature (Trendlog + Diagnose-Regeln) |
+
+---
+
+## 18. Konkrete Roadmap für die nächsten Releases
+
+### v1.3.0 — EL3681 Integration
+
+**Ziel:** Echte elektrische Messwerte des simulierten Fördermotors in die SPS und ins Dashboard bringen.
+
+**Aufgabenpaket:**
+
+1. **TwinCAT XAE:** EL3681 in der EtherCAT-Konfiguration finden und Kanäle aktivieren
+   - Klemme ist bereits physisch am Bus
+   - Prüfen ob EtherCAT-Scan sie erkannt hat
+   - Wenn nicht: erneuter Bus-Scan
+
+2. **GVL_IO erweitern:**
+   ```iecst
+   VAR_GLOBAL
+       AI_Motorspannung : REAL;   // V, aus EL3681
+       AI_Motorstrom    : REAL;   // A, aus EL3681
+   END_VAR
+   ```
+
+3. **Mapping im I/O-Baum:** EL3681-Kanäle ↔ GVL_IO-Variablen verknüpfen
+
+4. **Skalierung prüfen:** Rohwert der Klemme in physikalischen Wert umrechnen (V bzw. A). Datenblatt EL3681 konsultieren.
+
+5. **GVL_Simulation ergänzen:** `SIM_Motorspannung`, `SIM_Motorstrom` — analog zu bestehenden Sim-Werten
+
+6. **Umschaltung in MAIN:**
+   ```iecst
+   IF GVL_IO.SIM_Aktiv THEN
+       AI_Motorspannung := GVL_Simulation.SIM_Motorspannung;
+       AI_Motorstrom    := GVL_Simulation.SIM_Motorstrom;
+   ELSE
+       // echte EL3681-Werte werden bereits durch das Mapping befüllt
+   END_IF
+   ```
+
+7. **SensorAPI erweitern:** Neuer Endpoint `GET /api/sensor/electrical`
+
+   ```csharp
+   [HttpGet("electrical")]
+   public ActionResult GetElectrical()
+   {
+       return Ok(new
+       {
+           Spannung = Math.Round(_ads.ReadReal("GVL_IO.AI_Motorspannung"), 2),
+           Strom = Math.Round(_ads.ReadReal("GVL_IO.AI_Motorstrom"), 3),
+           Zeitstempel = DateTime.Now.ToString("HH:mm:ss")
+       });
+   }
+   ```
+
+8. **Testen:** Erst im Simulationsmodus (Werte forcen in GVL_Simulation), dann mit realer Messung
+
+**Strategischer Wert:** Das ist der Übergang von "SPS mit Simulation" zu "SPS mit echter Messtechnik". Damit ist das Projekt technisch vollständig für Industrieautomation.
+
+---
+
+### v1.4.0 — Predictive Maintenance Feature
+
+**Ziel:** Aus den elektrischen Messwerten Zustandsdiagnose ableiten und in einem Trendlog historisieren.
+
+**Aufgabenpaket:**
+
+1. **Diagnose-Regeln in der Schrittkette:**
+
+   ```iecst
+   // Beispielhafte Regel: Motor läuft, aber kein Strom fließt
+   IF GVL_IO.DO_Foerderband
+      AND GVL_IO.AI_Motorstrom < 0.1
+   THEN
+       GVL_IO.DiagnoseText := 'Verdacht: Leitungsbruch oder Motor nicht angeschlossen';
+       GVL_IO.AlarmAktiv := TRUE;
+   END_IF
+   ```
+
+2. **Weitere Regeln:**
+   - Motor EIN und Strom zu hoch → Blockade oder Überlast
+   - Versorgungsspannung außerhalb Toleranz → Netzstörung
+   - Strom-Zeitverlauf zeigt Anstieg → beginnender Verschleiß
+
+3. **CSV-Logging in der SensorAPI:**
+   - Bei jedem Endpoint-Call `/api/sensor/electrical` einen Eintrag in `messdaten.csv`
+   - Format: `Zeitstempel;Spannung;Strom;DiagnoseText`
+   - Wiederverwendung des CSV-Codes aus dem TUTORIAL Abschnitt 6 (v0.5)
+
+4. **Trend-Endpoint:** `GET /api/sensor/trend?minutes=60` liefert die letzten N Minuten aus dem CSV zurück
+
+5. **Dashboard-Erweiterung:** Chart.js-basierte Trendkurve für Spannung und Strom
+
+**Strategischer Wert:** Das ist der Punkt an dem das Projekt **wirklich** WITRON-Sprache spricht. Predictive Maintenance ist eines der zentralen Schlagworte der Intralogistik-Branche.
+
+---
+
+### Nach v1.4 (offene Themen)
+
+- **Write-Endpoint für die SPS:** Alarme aus dem Dashboard quittieren, Simulationswerte setzen
+- **Bulk-Read via SumReader:** Alle 4-6 Variablen in einem Roundtrip statt einzeln
+- **ADS-Notifications:** Push statt Poll — SPS meldet Änderungen aktiv an die API
+- **Entity Framework:** Ablösung des CSV-Logs durch echte Datenbankpersistenz
+- **ENUM-Refactoring:** `E_ProcessState` einführen (Phase 3 der ursprünglichen Roadmap)
+- **Funktionsbausteine:** `FB_Lagerprozess`, `FB_AlarmManager` — MAIN entschlacken
+
+---
+
+> *"Simulation → Prozess → C#-Schnittstelle → reale Messtechnik → Diagnose → Datenanalyse. Jede Phase einzeln testbar, jede Phase ein Meilenstein."*
