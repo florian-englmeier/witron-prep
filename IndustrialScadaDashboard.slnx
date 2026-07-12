@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Fundamentals/Fundamentals.csproj" />
+  <Project Path="SensorAPI/SensorAPI.csproj" Id="39c353bb-8e84-4423-b451-4eda1adeb6e6" />
+</Solution>
