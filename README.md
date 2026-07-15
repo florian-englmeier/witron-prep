@@ -52,7 +52,7 @@ The project consists of three parts:
 | :---- | :---- |
 | TwinCAT 3 | PLC runtime on Beckhoff CP6606, Structured Text |
 | Beckhoff.TwinCAT.Ads 7.0.292 | ADS client for .NET |
-| C\# / .NET 10 | Backend logic, API controllers |
+| C\# / .NET 9 | Backend logic, API controllers |
 | ASP.NET Core | REST API, middleware pipeline, dependency injection |
 | JavaScript | Dashboard frontend, `fetch()` API |
 | HTML / CSS | UI layout, dark theme |
@@ -179,7 +179,7 @@ The project has three tutorials, each with a distinct purpose:
 
 ### Requirements
 
-- .NET 10 SDK  
+- .NET 9 SDK  
 - Visual Studio 2022 (latest) — or Rider  
 - TwinCAT 3 XAE (optional, for PLC development)  
 - A Beckhoff PLC or valid ADS route (optional, for live PLC data)

@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <title>WITRON Anlagen-Monitor</title>
+    <meta charset="UTF-8">
+    <title>PalettenStation Live-Monitor</title>
     <style>
+        /* ============================================ */
+        /* B1 — Reset & Grundlayout                     */
+        /* ============================================ */
         * {
             margin: 0;
             padding: 0;
@@ -14,253 +18,524 @@
             background: #0a0e17;
             color: #e0e0e0;
             padding: 20px;
+            min-height: 100vh;
         }
 
+        /* ============================================ */
+        /* B2 — Header                                  */
+        /* ============================================ */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 20px 25px;
             background: #131a2e;
             border-radius: 10px;
             margin-bottom: 20px;
             border-left: 4px solid #00d4ff;
         }
 
-            .header h1 {
-                color: #00d4ff;
-                font-size: 24px;
-            }
+        .header h1 {
+            color: #00d4ff;
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
 
-            .header .zeit {
-                color: #888;
-                font-size: 14px;
-            }
+        .header .subtitle {
+            color: #666;
+            font-size: 12px;
+            font-family: 'Consolas', monospace;
+        }
 
-        .status-bar {
-            display: flex;
-            gap: 15px;
+        .header-right {
+            text-align: right;
+        }
+
+        .uhrzeit {
+            color: #888;
+            font-size: 13px;
+            margin-top: 6px;
+            font-family: 'Consolas', monospace;
+        }
+
+        .ads-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a2340;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #666;
+            transition: background 0.3s;
+        }
+
+        .dot.connected {
+            background: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+        }
+
+        .dot.disconnected {
+            background: #ff4444;
+            box-shadow: 0 0 8px #ff4444;
+        }
+
+        /* ============================================ */
+        /* B3 — Card-Container (allgemein)              */
+        /* ============================================ */
+        .card {
+            background: #131a2e;
+            border-radius: 10px;
+            padding: 20px 25px;
             margin-bottom: 20px;
         }
 
-        .status-box {
-            flex: 1;
-            padding: 15px;
-            border-radius: 10px;
-            background: #131a2e;
-            text-align: center;
-        }
-
-            .status-box .zahl {
-                font-size: 32px;
-                font-weight: bold;
-            }
-
-            .status-box .label {
-                font-size: 12px;
-                color: #888;
-                margin-top: 5px;
-            }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #131a2e;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        th {
-            background: #1a2340;
+        .card-title {
             color: #00d4ff;
-            padding: 12px 15px;
-            text-align: left;
-            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 15px;
         }
 
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #1a2340;
+        /* ============================================ */
+        /* B4 — Stepper (Schrittkette S0–S9)            */
+        /* ============================================ */
+        .stepper-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
-        tr:hover {
+        .stepper-normal, .stepper-alarm {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stepper-separator {
+            color: #333;
+            font-size: 24px;
+            margin: 0 10px;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 55px;
+        }
+
+        .step-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             background: #1a2340;
+            border: 2px solid #2a3550;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
         }
 
-        .alarm {
-            color: #ff4444;
+        .step-label {
+            color: #555;
+            font-size: 10px;
+            margin-top: 6px;
+            text-align: center;
+            max-width: 60px;
+            line-height: 1.2;
+        }
+
+        /* Aktiver Schritt (normal S0–S7) */
+        .step.active .step-circle {
+            background: #00d4ff;
+            border-color: #00d4ff;
+            color: #0a0e17;
+            box-shadow: 0 0 12px #00d4ff;
+            transform: scale(1.15);
+        }
+
+        .step.active .step-label {
+            color: #00d4ff;
             font-weight: bold;
         }
 
-        .ok {
-            color: #00ff88;
+        /* Aktiver Schritt (Alarm-Zweig S8/S9) */
+        .step.active.alarm .step-circle {
+            background: #ff4444;
+            border-color: #ff4444;
+            color: #fff;
+            box-shadow: 0 0 12px #ff4444;
+        }
+
+        .step.active.alarm .step-label {
+            color: #ff4444;
+        }
+
+        .schritt-text {
+            text-align: center;
+            color: #e0e0e0;
+            font-size: 18px;
+            font-weight: 500;
+            padding: 12px;
+            background: #1a2340;
+            border-radius: 6px;
+        }
+
+        /* ============================================ */
+        /* B5 — Messwerte + Alarm-Panel + Footer        */
+        /* ============================================ */
+        .messwerte-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .messwert-card {
+            padding: 25px;
+        }
+
+        .messwert-label {
+            color: #00d4ff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+        }
+
+        .messwert-value {
+            font-size: 42px;
+            font-weight: bold;
+            color: #e0e0e0;
+            font-family: 'Consolas', monospace;
+            margin-bottom: 15px;
         }
 
         .balken-bg {
             background: #1a2340;
             border-radius: 5px;
-            height: 20px;
-            width: 100%;
-            position: relative;
+            height: 12px;
+            overflow: hidden;
+            margin-bottom: 8px;
         }
 
         .balken-fill {
             height: 100%;
-            border-radius: 5px;
-            transition: width 0.5s ease;
-        }
-
-        .balken-ok {
             background: linear-gradient(90deg, #00ff88, #00d4ff);
+            border-radius: 5px;
+            transition: width 0.5s ease, background 0.3s;
+            width: 0%;
         }
 
-        .balken-alarm {
+        .balken-fill.warn {
+            background: linear-gradient(90deg, #ffaa00, #ff8800);
+        }
+
+        .balken-fill.alarm {
             background: linear-gradient(90deg, #ff4444, #ff8800);
         }
 
-        button {
-            background: #00d4ff;
-            color: #0a0e17;
-            border: none;
-            padding: 6px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
+        .messwert-range {
+            color: #555;
+            font-size: 11px;
         }
 
-            button:hover {
-                background: #00b8e6;
-            }
+        /* Alarm-Panel */
+        .alarm-panel {
+            text-align: center;
+            padding: 30px;
+            border-left: 4px solid #00ff88;
+            transition: border-color 0.3s;
+        }
 
-        .quittiert {
-            color: #888;
+        .alarm-panel.active {
+            border-left-color: #ff4444;
+            animation: pulse 1.2s infinite;
+        }
+
+        .alarm-label {
+            color: #00d4ff;
             font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        .alarm-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .alarm-panel.active .alarm-value {
+            color: #ff4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { background: #131a2e; }
+            50%      { background: #2a1520; }
         }
 
         .footer {
             text-align: center;
-            color: #444;
+            color: #333;
             margin-top: 20px;
-            font-size: 12px;
+            font-size: 11px;
         }
     </style>
 </head>
 <body>
+
+    <!-- ============================================ -->
+    <!-- 1. HEADER — Titel + ADS-Verbindungsstatus    -->
+    <!-- ============================================ -->
     <div class="header">
-        <h1>WITRON Anlagen-Monitor</h1>
-        <div class="zeit" id="uhrzeit"></div>
-    </div>
-
-    <div class="status-bar">
-        <div class="status-box">
-            <div class="zahl" id="anzahlSensoren">0</div>
-            <div class="label">Sensoren aktiv</div>
+        <div class="header-left">
+            <h1>PalettenStation Live-Monitor</h1>
+            <div class="subtitle">Live-Daten von CP6606 · AMS 5.35.203.54.1.1</div>
         </div>
-        <div class="status-box">
-            <div class="zahl ok" id="anzahlOk">0</div>
-            <div class="label">Status OK</div>
-        </div>
-        <div class="status-box">
-            <div class="zahl alarm" id="anzahlAlarm">0</div>
-            <div class="label">Alarme</div>
+        <div class="header-right">
+            <div class="ads-status" id="adsStatus">
+                <span class="dot" id="adsDot"></span>
+                <span id="adsText">verbinde …</span>
+            </div>
+            <div class="uhrzeit" id="uhrzeit"></div>
         </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Sensor</th>
-                <th>Messwert</th>
-                <th>Bereich</th>
-                <th>Einheit</th>
-                <th>Status</th>
-                <th>Quittierung</th>
-            </tr>
-        </thead>
-        <tbody id="sensordaten">
-        </tbody>
-    </table>
+    <!-- ============================================ -->
+    <!-- 2. STEPPER — Schrittkette S0–S9              -->
+    <!-- ============================================ -->
+    <div class="card">
+        <div class="card-title">Prozessschritt</div>
+        <div class="stepper-container">
+            <div class="stepper-normal" id="stepperNormal">
+                <!-- S0–S7 werden per JS erzeugt -->
+            </div>
+            <div class="stepper-separator">|</div>
+            <div class="stepper-alarm" id="stepperAlarm">
+                <!-- S8–S9 werden per JS erzeugt -->
+            </div>
+        </div>
+        <div class="schritt-text" id="schrittText">–</div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 3. MESSWERTE — Folien- und Motortemperatur   -->
+    <!-- ============================================ -->
+    <div class="messwerte-grid">
+        <div class="card messwert-card" id="folienCard">
+            <div class="messwert-label">Folientemperatur</div>
+            <div class="messwert-value" id="folienValue">–</div>
+            <div class="balken-bg">
+                <div class="balken-fill" id="folienBar"></div>
+            </div>
+            <div class="messwert-range">Bereich: 100–180 °C</div>
+        </div>
+
+        <div class="card messwert-card" id="motorCard">
+            <div class="messwert-label">Motortemperatur</div>
+            <div class="messwert-value" id="motorValue">–</div>
+            <div class="balken-bg">
+                <div class="balken-fill" id="motorBar"></div>
+            </div>
+            <div class="messwert-range">Bereich: 20–70 °C</div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- 4. ALARM-PANEL                                -->
+    <!-- ============================================ -->
+    <div class="card alarm-panel" id="alarmPanel">
+        <div class="alarm-label">Anlagenstatus</div>
+        <div class="alarm-value" id="alarmValue">OK</div>
+    </div>
 
     <div class="footer">
-        WITRON Sensor-Dashboard v0.9 | Florian Englmeier | 2026
+        Industrial SCADA Dashboard v1.2.1 · Florian Englmeier · 2026
     </div>
 
     <script>
+        // ============================================
+        // C1 — KONFIGURATION (alle "magischen Zahlen") 
+        // ============================================
+        const REFRESH_MS = 2000;
+
+        const SCHRITT_LABELS = [
+            { nr: 0, label: "Bereit" },
+            { nr: 1, label: "Transport" },
+            { nr: 2, label: "Stopp" },
+            { nr: 3, label: "Hub hoch" },
+            { nr: 4, label: "Temp" },
+            { nr: 5, label: "Bearbeitung" },
+            { nr: 6, label: "Hub runter" },
+            { nr: 7, label: "Ablauf" }
+        ];
+
+        const SCHRITT_ALARM = [
+            { nr: 8, label: "ALARM" },
+            { nr: 9, label: "Quitt." }
+        ];
+
+        const FOLIEN_MIN = 0;
+        const FOLIEN_MAX = 200;
+        const FOLIEN_OK_LOW = 100;
+        const FOLIEN_OK_HIGH = 180;
+
+        const MOTOR_MIN = 0;
+        const MOTOR_MAX = 100;
+        const MOTOR_OK_HIGH = 70;
+
+        // ============================================
+        // C2 — Stepper einmalig aufbauen
+        // ============================================
+        function baueStepper() {
+            const normal = document.getElementById('stepperNormal');
+            const alarm = document.getElementById('stepperAlarm');
+
+            SCHRITT_LABELS.forEach(s => {
+                normal.innerHTML += `
+                    <div class="step" id="step-${s.nr}">
+                        <div class="step-circle">${s.nr}</div>
+                        <div class="step-label">S${s.nr}<br>${s.label}</div>
+                    </div>
+                `;
+            });
+
+            SCHRITT_ALARM.forEach(s => {
+                alarm.innerHTML += `
+                    <div class="step alarm" id="step-${s.nr}">
+                        <div class="step-circle">${s.nr}</div>
+                        <div class="step-label">S${s.nr}<br>${s.label}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // ============================================
+        // C3 — Uhrzeit
+        // ============================================
         function updateUhrzeit() {
             const jetzt = new Date();
             document.getElementById('uhrzeit').textContent =
-                jetzt.toLocaleDateString('de-DE') + ' ' +
-                jetzt.toLocaleTimeString('de-DE');
+                jetzt.toLocaleTimeString('de-DE') + ' · ' +
+                jetzt.toLocaleDateString('de-DE');
         }
 
+        // ============================================
+        // C4 — Live-Daten laden
+        // ============================================
         async function laden() {
-            updateUhrzeit();
+            try {
+                const response = await fetch('/api/sensor/live');
 
-            const response = await fetch('/api/sensor');
-            const daten = await response.json();
+                if (!response.ok) {
+                    setzeAdsStatus(false);
+                    return;
+                }
 
-            const tbody = document.getElementById('sensordaten');
-            tbody.innerHTML = '';
+                const daten = await response.json();
 
-            let alarme = 0;
-            let oks = 0;
+                setzeAdsStatus(daten.connected);
+                setzeAktivenSchritt(daten.schritt);
+                document.getElementById('schrittText').textContent = daten.schrittText;
+                setzeFolienTemperatur(daten.folienTemperatur);
+                setzeMotorTemperatur(daten.motorTemperatur);
+                setzeAlarm(daten.alarmAktiv);
 
-            daten.forEach(s => {
-                const istAlarm = s.messwert < s.min || s.messwert > s.max;
-                if (istAlarm) alarme++; else oks++;
-
-                const status = istAlarm ? 'ALARM' : 'OK';
-                const css = istAlarm ? 'alarm' : 'ok';
-
-                // Balkenbreite berechnen (0-100%)
-                const range = s.max - s.min;
-                const prozent = Math.min(Math.max(((s.messwert - s.min) / range) * 100, 0), 100);
-                const balkenCss = istAlarm ? 'balken-alarm' : 'balken-ok';
-
-                const quittiert = s.alarmQuittiert
-                    ? `<span class="quittiert">${s.quittiertVon} | ${s.quittiertUm}</span>`
-                    : '';
-
-                const button = istAlarm && !s.alarmQuittiert
-                    ? `<button onclick="quittieren('${s.name}')">Quittieren</button>`
-                    : '';
-
-                tbody.innerHTML += `
-                        <tr>
-                            <td><strong>${s.name}</strong></td>
-                            <td>${s.messwert.toFixed(2)}</td>
-                            <td>
-                                <div class="balken-bg">
-                                    <div class="balken-fill ${balkenCss}" style="width: ${prozent}%"></div>
-                                </div>
-                            </td>
-                            <td>${s.einheit}</td>
-                            <td class="${css}">${status} ${button}</td>
-                            <td>${quittiert}</td>
-                        </tr>
-                    `;
-            });
-
-            document.getElementById('anzahlSensoren').textContent = daten.length;
-            document.getElementById('anzahlOk').textContent = oks;
-            document.getElementById('anzahlAlarm').textContent = alarme;
+            } catch (fehler) {
+                console.error('API-Fehler:', fehler);
+                setzeAdsStatus(false);
+            }
         }
 
-        async function quittieren(sensorName) {
-            const techniker = prompt('Dein Name:');
-            if (!techniker) return;
+        // ============================================
+        // C5 — UI-Setzer (einer pro Widget)
+        // ============================================
+        function setzeAdsStatus(verbunden) {
+            const dot = document.getElementById('adsDot');
+            const text = document.getElementById('adsText');
 
-            await fetch('/api/sensor/quittieren', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sensorName: sensorName, techniker: techniker })
-            });
-
-            laden();
+            dot.classList.remove('connected', 'disconnected');
+            if (verbunden) {
+                dot.classList.add('connected');
+                text.textContent = 'ADS verbunden';
+            } else {
+                dot.classList.add('disconnected');
+                text.textContent = 'ADS getrennt';
+            }
         }
 
+        function setzeAktivenSchritt(schrittNr) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            const aktiv = document.getElementById(`step-${schrittNr}`);
+            if (aktiv) aktiv.classList.add('active');
+        }
+
+        function setzeFolienTemperatur(wert) {
+            document.getElementById('folienValue').textContent = `${wert.toFixed(1)} °C`;
+
+            const prozent = ((wert - FOLIEN_MIN) / (FOLIEN_MAX - FOLIEN_MIN)) * 100;
+            const clamped = Math.min(Math.max(prozent, 0), 100);
+            const bar = document.getElementById('folienBar');
+            bar.style.width = clamped + '%';
+
+            bar.classList.remove('warn', 'alarm');
+            if (wert < FOLIEN_OK_LOW || wert > FOLIEN_OK_HIGH) {
+                bar.classList.add('alarm');
+            }
+        }
+
+        function setzeMotorTemperatur(wert) {
+            document.getElementById('motorValue').textContent = `${wert.toFixed(1)} °C`;
+
+            const prozent = ((wert - MOTOR_MIN) / (MOTOR_MAX - MOTOR_MIN)) * 100;
+            const clamped = Math.min(Math.max(prozent, 0), 100);
+            const bar = document.getElementById('motorBar');
+            bar.style.width = clamped + '%';
+
+            bar.classList.remove('warn', 'alarm');
+            if (wert > MOTOR_OK_HIGH) {
+                bar.classList.add('alarm');
+            }
+        }
+
+        function setzeAlarm(aktiv) {
+            const panel = document.getElementById('alarmPanel');
+            const value = document.getElementById('alarmValue');
+
+            if (aktiv) {
+                panel.classList.add('active');
+                value.textContent = 'ALARM';
+            } else {
+                panel.classList.remove('active');
+                value.textContent = 'OK';
+            }
+        }
+
+        // ============================================
+        // C6 — Start
+        // ============================================
+        baueStepper();
+        updateUhrzeit();
         laden();
-        setInterval(laden, 2000);
+
+        setInterval(updateUhrzeit, 1000);
+        setInterval(laden, REFRESH_MS);
     </script>
 </body>
 </html>
