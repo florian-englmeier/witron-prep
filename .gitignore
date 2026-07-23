@@ -361,3 +361,25 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# TwinCAT build artifacts (regenerieren sich beim Build)
+_Boot/
+_Config/
+_CompileInfo/
+_Deployment/
+*.tsproj_temp
+*.project.~u
+*.tsproj.bak
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+
+# TwinCAT PLC compile output
+Port_*.app
+Port_*.cid
+Port_*.crc
+Port_*.occ
+Port_*.tizip
+Port_*_boot.tizip
